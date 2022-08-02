@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def certificates_from_asn1(cert_set: CertificateSet) -> List[x509.Certificate]:
     """Convert an asn1crypto CertificateSet to a list of cryptography.x509.Certificate."""
-    result = list()
+    result = []
 
     for cert in cert_set:
         cert_choice = cert.chosen
@@ -44,10 +44,9 @@ def getcacaps(url: str) -> Set[CACaps]:
     """Query the SCEP Service for its capabilities."""
     res = requests.get(url, {'operation': 'GetCACaps'})
     if res.status_code != 200:
-        raise ValueError('Got invalid status code for GetCACaps: {}'.format(res.status_code))
+        raise ValueError(f'Got invalid status code for GetCACaps: {res.status_code}')
     caps = res.text.split("\n")
-    cacaps = {CACaps(cap.strip()) for cap in caps}
-    return cacaps
+    return {CACaps(cap.strip()) for cap in caps}
 
 
 def getcacert(url: str) -> List[x509.Certificate]:
@@ -63,15 +62,16 @@ def getcacert(url: str) -> List[x509.Certificate]:
         signed_data = ci['content']
         # convert certificates using cryptography lib since it is easier to deal with the decryption
         assert len(signed_data['certificates']) > 0
-        certs = certificates_from_asn1(signed_data['certificates'])
-        return certs
+        return certificates_from_asn1(signed_data['certificates'])
 
 
 def pkioperation(url: str, data: bytes):
     """Perform a PKIOperation using the CMS data given."""
-    res = requests.post('{}?operation=PKIOperation'.format(url), data=data,
-                        headers={'content-type': 'application/x-pki-message'})
-    return res
+    return requests.post(
+        f'{url}?operation=PKIOperation',
+        data=data,
+        headers={'content-type': 'application/x-pki-message'},
+    )
 
 
 def pkcsreq(url: str, private_key_path: str = None):
@@ -148,7 +148,7 @@ def pkcsreq(url: str, private_key_path: str = None):
 
     res = pkioperation(url, data=pki_msg.dump())
 
-    logger.debug('Response: Status {}'.format(res.status_code))
+    logger.debug(f'Response: Status {res.status_code}')
     if res.status_code != 200:
         return -1
     #
@@ -166,7 +166,7 @@ def pkcsreq(url: str, private_key_path: str = None):
     logger.debug('PKI Status: %s', PKIStatus(cert_rep.pki_status))
 
     if PKIStatus(cert_rep.pki_status) == PKIStatus.FAILURE:
-        logger.error('SCEP Request Failed: {}'.format(FailInfo(cert_rep.fail_info)))
+        logger.error(f'SCEP Request Failed: {FailInfo(cert_rep.fail_info)}')
 
     elif PKIStatus(cert_rep.pki_status) == PKIStatus.SUCCESS:
         # This should be the PKCS#7 Degenerate
@@ -183,7 +183,10 @@ def pkcsreq(url: str, private_key_path: str = None):
         result = x509.load_der_x509_certificate(my_cert.dump(), default_backend())
         subject = result.subject
 
-        logger.info('SCEP CA issued a certificate with serial #{}, subject: {}'.format(result.serial_number, subject))
+        logger.info(
+            f'SCEP CA issued a certificate with serial #{result.serial_number}, subject: {subject}'
+        )
+
 
         pem_data = result.public_bytes(serialization.Encoding.PEM)
         with open('scep.cer', 'wb') as fd:
@@ -196,8 +199,6 @@ def main():
 
     if args.operation == 'pkcsreq':
         pkcsreq(args.url)
-    elif args.operation == 'getcert':
-        pass
     
 
 

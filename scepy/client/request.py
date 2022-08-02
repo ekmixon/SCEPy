@@ -62,7 +62,7 @@ def generate_self_signed(private_key: rsa.RSAPrivateKey, subject: x509.Name) -> 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(subject)
     builder = builder.issuer_name(subject)
-    builder = builder.not_valid_before(datetime.datetime.today() - one_day)
+    builder = builder.not_valid_before(datetime.datetime.now() - one_day)
     builder = builder.not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=365))
     builder = builder.serial_number(x509.random_serial_number())
     builder = builder.public_key(private_key.public_key())
@@ -82,7 +82,9 @@ def generate_self_signed(private_key: rsa.RSAPrivateKey, subject: x509.Name) -> 
         ),
         True
     )
-    certificate = builder.sign(private_key=private_key, algorithm=hashes.SHA1(),
-                               backend=default_backend())
-    return certificate
+    return builder.sign(
+        private_key=private_key,
+        algorithm=hashes.SHA1(),
+        backend=default_backend(),
+    )
 

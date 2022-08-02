@@ -21,8 +21,8 @@ class WSGIChunkedBodyCopy(object):
     def __call__(self, environ, start_response):
         wsgi_input = environ.get('wsgi.input')
         if 'chunked' in environ.get('HTTP_TRANSFER_ENCODING', '') and \
-                        environ.get('CONTENT_LENGTH', '') == '' and \
-                wsgi_input:
+                            environ.get('CONTENT_LENGTH', '') == '' and \
+                    wsgi_input:
 
             body = b''
             sz = int(wsgi_input.readline(), 16)

@@ -112,9 +112,7 @@ class CertificateAuthority(object):
         ias = IssuerAndSerialNumber()
         #ias['issuer'] = self.certificate.issuer  # probably wont work, need to get the asn1crypto type
         ias['serial_number'] = self.certificate.serial_number
-        sid = SignerIdentifier('issuer_and_serial_number', ias)
-
-        return sid
+        return SignerIdentifier('issuer_and_serial_number', ias)
 
     def sign(self, csr: x509.CertificateSigningRequest, algorithm: str = 'sha256') -> x509.Certificate:
         """Sign a certificate signing request.

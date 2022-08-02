@@ -33,7 +33,7 @@ class SCEPMessage(object):
         # convert certificates from ASN.1 using cryptography lib since it is easier to deal with the decryption
         if len(signed_data['certificates']) > 0:
             certs = certificates_from_asn1(signed_data['certificates'])
-            print('{} certificate(s) attached to signedData'.format(len(certs)))
+            print(f'{len(certs)} certificate(s) attached to signedData')
             msg._certificates = certs
         else:
             certs = None
@@ -57,9 +57,9 @@ class SCEPMessage(object):
             # assert signer_cert is not None
 
             sig_algo = signer_info['signature_algorithm'].signature_algo
-            print('Using signature algorithm: {}'.format(sig_algo))
+            print(f'Using signature algorithm: {sig_algo}')
             hash_algo = signer_info['digest_algorithm']['algorithm'].native
-            print('Using digest algorithm: {}'.format(hash_algo))
+            print(f'Using digest algorithm: {hash_algo}')
 
             if hash_algo == 'sha1':
                 hasher = hashes.SHA1()
@@ -68,7 +68,7 @@ class SCEPMessage(object):
             elif hash_algo == 'sha512':
                 hasher = hashes.SHA512()
             else:
-                raise ValueError('Unsupported hash algorithm: {}'.format(hash_algo))
+                raise ValueError(f'Unsupported hash algorithm: {hash_algo}')
 
             assert sig_algo == 'rsassa_pkcs1v15'  # We only support PKCS1v1.5
             if certs is not None and len(certs) > 0:  # verify content
@@ -88,20 +88,14 @@ class SCEPMessage(object):
                 content_digest = hashes.Hash(hashes.SHA512(), backend=default_backend())  # Was: SHA-256
                 content_digest.update(signed_data['encap_content_info']['content'].native)
                 content_digest_r = content_digest.finalize()
-                # print('expecting SHA-256 digest: {}'.format(b64encode(content_digest_r)))
-                for attr in signer_info['signed_attrs']:
-                    if attr['type'].native == 'message_digest':
-                        pass
-                        # print('signer says digest is: {}'.format(b64encode(attr['values'][0].native)))
-
                 # Calculate Digest on content + signed attrs
                 cdsa = hashes.Hash(hashes.SHA512(), backend=default_backend())  # Was: SHA-256
                 #cdsa.update(signed_data['encap_content_info']['content'].native)
                 cdsa.update(signer_info['signed_attrs'].dump())
                 cdsa_r = cdsa.finalize()
-                # print('signature digest: {}'.format(b64encode(cdsa_r)))
-                # print('expecting signature: {}'.format(b64encode(signer_info['signature'].native)))
-                # verifier.verify()
+                        # print('signature digest: {}'.format(b64encode(cdsa_r)))
+                        # print('expecting signature: {}'.format(b64encode(signer_info['signature'].native)))
+                        # verifier.verify()
 
             # Set the signer for convenience on the instance
             msg._signer_info = signer_info
@@ -122,7 +116,7 @@ class SCEPMessage(object):
                         msg._pki_status = signed_attr['values'][0].native
                     elif name == 'fail_info':
                         msg._fail_info = signed_attr['values'][0].native
-            
+
         msg._signed_data = cinfo['content']['encap_content_info']['content']
 
         return msg
@@ -210,11 +204,14 @@ class SCEPMessage(object):
             encrypted_key,
             padding=asympad.PKCS1v15(),
         )
-        
+
         # Now we have the plain key, we can decrypt the encrypted data
         encrypted_contentinfo = encap['content']['encrypted_content_info']
-        print('encrypted content type: {}'.format(encrypted_contentinfo['content_type'].native))
-        
+        print(
+            f"encrypted content type: {encrypted_contentinfo['content_type'].native}"
+        )
+
+
         algorithm = encrypted_contentinfo['content_encryption_algorithm']  #: EncryptionAlgorithm
         encrypted_content_bytes = encrypted_contentinfo['encrypted_content'].native
 
@@ -238,8 +235,7 @@ class SCEPMessage(object):
         return decryptor.update(encrypted_content_bytes) + decryptor.finalize()
 
     def debug(self):
-        out = "SCEP Message\n"
-        out += "------------\n"
+        out = "SCEP Message\n" + "------------\n"
         out += "{:<20}: {}\n".format('Transaction ID', self.transaction_id)
         out += "{:<20}: {}\n".format('Message Type', self.message_type)
         out += "{:<20}: {}\n".format('PKI Status', self.pki_status)
@@ -253,7 +249,7 @@ class SCEPMessage(object):
 
         print('Certificates')
         print('------------')
-        print('Includes {} certificate(s)'.format(len(self.certificates)))
+        print(f'Includes {len(self.certificates)} certificate(s)')
         for c in self.certificates:
             print(c.subject)
         print()

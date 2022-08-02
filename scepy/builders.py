@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def certificates_from_asn1(cert_set: CertificateSet) -> List[x509.Certificate]:
     """Convert an asn1crypto CertificateSet to a list of cryptography.x509.Certificate."""
-    result = list()
+    result = []
 
     for cert in cert_set:
         cert_choice = cert.chosen
@@ -108,10 +108,7 @@ class Signer(object):
         self.signed_digest_algorithm_id = SignedDigestAlgorithmId('rsassa_pkcs1v15')  # was: sha256_rsa
         self.signed_digest_algorithm = SignedDigestAlgorithm({'algorithm': self.signed_digest_algorithm_id})
 
-        if signed_attributes is not None:
-            self.signed_attributes = signed_attributes
-        else:
-            self.signed_attributes = []
+        self.signed_attributes = [] if signed_attributes is None else signed_attributes
 
     @property
     def sid(self) -> SignerIdentifier:
@@ -121,8 +118,7 @@ class Signer(object):
 
         # Signer Identifier
         ias = IssuerAndSerialNumber({'issuer': asn1cert.issuer, 'serial_number': asn1cert.serial_number})
-        sid = SignerIdentifier('issuer_and_serial_number', ias)
-        return sid
+        return SignerIdentifier('issuer_and_serial_number', ias)
 
     def sign(self,
              data: bytes,
@@ -130,7 +126,7 @@ class Signer(object):
              content_digest: bytes,
              cms_attributes: List[CMSAttribute]) -> SignerInfo:
         """Generate a signature encrypted with the signer's private key and return the SignerInfo."""
-        
+
         # The CMS standard requires that the content-type authenticatedAttribute and the message-digest
         # attribute must be present if any authenticatedAttribute exists at all.
         self.signed_attributes = cms_attributes
@@ -195,22 +191,19 @@ class Signer(object):
         signer.update(cms_attributes.dump())
         signature = signer.finalize()
 
-        signer_info = SignerInfo({
-            # Version must be 1 if signer uses IssuerAndSerialNumber as sid
-            'version': CMSVersion(1),
-            'sid': self.sid,
-            
-            'digest_algorithm': self.digest_algorithm,
-            'signed_attrs': cms_attributes,
-
-            # Referred to as ``digestEncryptionAlgorithm`` in the RFC
-            'signature_algorithm': self.signed_digest_algorithm,
-
-            # Referred to as ``encryptedDigest`` in the RFC
-            'signature': OctetString(signature),
-        })
-
-        return signer_info
+        return SignerInfo(
+            {
+                # Version must be 1 if signer uses IssuerAndSerialNumber as sid
+                'version': CMSVersion(1),
+                'sid': self.sid,
+                'digest_algorithm': self.digest_algorithm,
+                'signed_attrs': cms_attributes,
+                # Referred to as ``digestEncryptionAlgorithm`` in the RFC
+                'signature_algorithm': self.signed_digest_algorithm,
+                # Referred to as ``encryptedDigest`` in the RFC
+                'signature': OctetString(signature),
+            }
+        )
 
 
 class PKIMessageBuilder(object):
@@ -447,7 +440,7 @@ class PKIMessageBuilder(object):
         # digest.update(pkcs_pki_envelope.dump())
         digest.update(pkienvelope_content_info.dump())
         d = digest.finalize()
-        
+
         # Now start building SignedData
 
         # signer_infos = self._build_signerinfos(pkcs_pki_envelope.dump(), d, self._cms_attributes)
@@ -472,10 +465,10 @@ class PKIMessageBuilder(object):
             'encap_content_info': encap_info,  # should point to type data + content contentinfo
         })
 
-        ci = ContentInfo({
-            'content_type': ContentType('signed_data'),
-            'content': sd,
-        })
-
-        return ci
+        return ContentInfo(
+            {
+                'content_type': ContentType('signed_data'),
+                'content': sd,
+            }
+        )
 

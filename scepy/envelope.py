@@ -94,11 +94,8 @@ class PKCSPKIEnvelopeBuilder(object):
 
         if self._encryption_algorithm_id.native == 'tripledes_3key':
             padder = PKCS7(TripleDES.block_size).padder()
-        elif self._encryption_algorithm_id.native == 'aes128_cbc':
+        elif self._encryption_algorithm_id.native in ['aes128_cbc', 'aes256_cbc']:
             padder = PKCS7(AES.block_size).padder()
-        elif self._encryption_algorithm_id.native == 'aes256_cbc':
-            padder = PKCS7(AES.block_size).padder()
-
         padded = padder.update(data)
         padded += padder.finalize()
 
@@ -129,14 +126,19 @@ class PKCSPKIEnvelopeBuilder(object):
             'serial_number': asn1cert.serial_number
         })
 
-        ri = RecipientInfo('ktri', KeyTransRecipientInfo({
-            'version': 0,
-            'rid': RecipientIdentifier('issuer_and_serial_number', ias),
-            'key_encryption_algorithm': KeyEncryptionAlgorithm({'algorithm': KeyEncryptionAlgorithmId('rsa')}),
-            'encrypted_key': encrypted_symkey,
-        }))
-
-        return ri
+        return RecipientInfo(
+            'ktri',
+            KeyTransRecipientInfo(
+                {
+                    'version': 0,
+                    'rid': RecipientIdentifier('issuer_and_serial_number', ias),
+                    'key_encryption_algorithm': KeyEncryptionAlgorithm(
+                        {'algorithm': KeyEncryptionAlgorithmId('rsa')}
+                    ),
+                    'encrypted_key': encrypted_symkey,
+                }
+            ),
+        )
 
     def finalize(self) -> Tuple[EnvelopedData, Union[TripleDES, AES], bytes]:
         """Encrypt the data and process the key using all available recipients.

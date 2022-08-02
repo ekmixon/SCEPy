@@ -44,12 +44,9 @@ class FileStorage(CertificateAuthorityStorage):
         with open(self._cert_path, 'rb') as fd:
             pem_data = fd.read()
 
-        certificate = x509.load_pem_x509_certificate(
-            data=pem_data,
-            backend=default_backend()
+        return x509.load_pem_x509_certificate(
+            data=pem_data, backend=default_backend()
         )
-
-        return certificate
 
     @ca_certificate.setter
     def ca_certificate(self, certificate: x509.Certificate):
@@ -66,13 +63,9 @@ class FileStorage(CertificateAuthorityStorage):
         with open(self._key_path, 'rb') as key_file:
             data = key_file.read()
 
-        private_key = serialization.load_pem_private_key(
-            data=data,
-            password=self._password,
-            backend=default_backend()
+        return serialization.load_pem_private_key(
+            data=data, password=self._password, backend=default_backend()
         )
-
-        return private_key
 
     @private_key.setter
     def private_key(self, private_key: rsa.RSAPrivateKey):
@@ -100,20 +93,18 @@ class FileStorage(CertificateAuthorityStorage):
             fd.write(str(no))
 
     def save_issued_certificate(self, certificate: x509.Certificate):
-        cert_path = os.path.join(self._issued_path, '{}.cer'.format(certificate.serial_number))
+        cert_path = os.path.join(self._issued_path, f'{certificate.serial_number}.cer')
         with open(cert_path, 'wb') as fd:
             fd.write(certificate.public_bytes(serialization.Encoding.PEM))
 
     def fetch_issued_certificate(self, serial: int) -> Union[None, x509.Certificate]:
-        cert_path = os.path.join(self._issued_path, '{}.cer'.format(serial))
+        cert_path = os.path.join(self._issued_path, f'{serial}.cer')
         with open(cert_path, 'rb') as fd:
             pem_data = fd.read()
 
-        certificate = x509.load_pem_x509_certificate(
-            data=pem_data,
-            backend=default_backend()
+        return x509.load_pem_x509_certificate(
+            data=pem_data, backend=default_backend()
         )
-        return certificate
 
 
 class SQLAlchemyStorage(CertificateAuthorityStorage):
